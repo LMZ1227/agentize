@@ -1,6 +1,9 @@
 - To test whole the project, run `make test`
   - To test a specific module, look at all `*.sh` files in the `tests/` folder.
+  - To add a new test, create a new `*.sh` file in the `tests/` folder, and append it to `test-all.sh`.
 - DO NOT use `cd` anywhere!
   - Use relative paths to this project root only!
   - `cd` permission is disabled for this CLI.
 - `README.md` in each folder shall decribe the folder purpose and organization.
+  - If not, please create one!
+- Keep in mind, all the rules developed in this project should be as project-neutral as possible.

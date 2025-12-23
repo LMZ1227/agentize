@@ -22,20 +22,75 @@ For more details of the variables and options available, refer to our
 ## Core Phylosophy
 
 1. Plan first, code later: Use AI to generate a detailed plan before writing any code.
-  - Plan is put on Github Issues for tracking.
+   - Plan is put on Github Issues for tracking.
 2. Build [skills](https://agentskills.io/), do not build agents.
-  - Skills are modular reusable, formal, and lightweighted flow definitions.
+   - Skills are modular reusable, formal, and lightweighted flow definitions.
 3. Bootstrapping via self-improvment: We have `.claude` linked to our `claude` rules
    directory. We use these rules to develop these rules further.
+   - Top-down design: Start with a high-level view of the development flow.
+   - Bottom-up implementation: Implement each aspect of the flow from bottom, and finally
+     integrate them together.
+
+### Workflow:
+
+`/plan-an-issue` command flow:
+```mermaid
+graph TD
+    A[User provides requirements] --> B[Novel-proposer agent]
+    B[Novel-proposer: Break down into uncommon plans] --> D[Synthesis agent]
+    B --> C[Critique agent]
+    C[Critique: Review feasibility] --> D
+    D[3rd-party reviewer: Synthesize final plan via consensus & conflicts] --> E[User approves/rejects plan]
+    E -->|Approved| F[Create Github Issue]
+    E -->|Rejected| A
+    F[Open a dev issue] --> G[Code implementation]
+
+    style A fill:#ffcccc
+    style E fill:#ffcccc
+    style B fill:#ccddff
+    style C fill:#ccddff
+    style D fill:#ccddff
+    style F fill:#ccddff
+    style G fill:#ccddff
+```
+
+`/issue2impl` command flow:
+```mermaid
+graph TD
+    A[Github Issue created] --> B[Fork new branch from main]
+    B --> C[Step 0: Update documentation]
+    C --> D[Step 1: Create/update test cases]
+    D --> E[Step 2: towards-next-milestone skill]
+    E -->|more than 800 lines w/o finishing| F[Create milestone document]
+    F --> G[User starts next session]
+    G --> E
+    E -->|finish all tests| H[Step 4: Code reviewer reviews quality]
+    H --> I[Step 5: Create pull request]
+    I --> J[User reviews and merges]
+
+    style G fill:#ffcccc
+    style J fill:#ffcccc
+    style B fill:#ccddff
+    style C fill:#ccddff
+    style D fill:#ccddff
+    style E fill:#ccddff
+    style F fill:#ccddff
+    style H fill:#ccddff
+    style I fill:#ccddff
+```
+
+The light red boxes are user interventions, including providing development
+requirements, approving/rejecting plans, and approving/rejecting code merges.
+The blue boxes are automated steps performed by AI agents.
 
 ## Project Organization
 
 ```plaintext
 agentize/
 ├── docs/                   # Document
-|   ├── draft/              # Draft documents for local development
-|   ├── OPTIONS.md          # Document for make options
-|   └── git-msg-tags.md     # Used by \git-commit skill and command to write meaningful commit messages
+│   ├── draft/              # Draft documents for local development
+│   ├── OPTIONS.md          # Document for make options
+│   └── git-msg-tags.md     # Used by \git-commit skill and command to write meaningful commit messages
 ├── templates/              # Templates for SDK generation
 ├── claude/                 # Core agent rules for Claude Code
 ├── tests/                  # Test cases

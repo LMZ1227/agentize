@@ -15,6 +15,18 @@ TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
 
+# Test Agentize mode validation
+echo ">>> Testing Agentize mode validation..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-agentize-modes.sh"; then
+    echo "✓ Agentize mode validation tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Agentize mode validation tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Test C SDK
 echo ">>> Testing C SDK..."
 TOTAL_TESTS=$((TOTAL_TESTS + 1))

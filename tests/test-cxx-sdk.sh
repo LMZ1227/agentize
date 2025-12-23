@@ -35,13 +35,8 @@ if [ ! -f "$TMP_DIR_SRC/src/hello.cpp" ]; then
 fi
 
 # Verify Claude Code configuration exists
-if [ ! -L "$TMP_DIR_SRC/.claude" ]; then
-    echo "Error: .claude symlink not found!"
-    exit 1
-fi
-
-if [ ! -d "$TMP_DIR_SRC/claude" ]; then
-    echo "Error: claude/ directory not found!"
+if [ ! -d "$TMP_DIR_SRC/.claude" ]; then
+    echo "Error: .claude/ directory not found!"
     exit 1
 fi
 
@@ -55,18 +50,18 @@ if [ ! -f "$TMP_DIR_SRC/docs/git-msg-tags.md" ]; then
     exit 1
 fi
 
-if [ ! -f "$TMP_DIR_SRC/claude/settings.json" ]; then
-    echo "Error: claude/settings.json not found!"
+if [ ! -f "$TMP_DIR_SRC/.claude/settings.json" ]; then
+    echo "Error: .claude/settings.json not found!"
     exit 1
 fi
 
-if [ ! -d "$TMP_DIR_SRC/claude/skills/git-commit" ]; then
-    echo "Error: claude/skills/git-commit/ not found!"
+if [ ! -d "$TMP_DIR_SRC/.claude/skills/git-commit" ]; then
+    echo "Error: .claude/skills/git-commit/ not found!"
     exit 1
 fi
 
-if [ ! -d "$TMP_DIR_SRC/claude/skills/open-issue" ]; then
-    echo "Error: claude/skills/open-issue/ not found!"
+if [ ! -d "$TMP_DIR_SRC/.claude/skills/open-issue" ]; then
+    echo "Error: .claude/skills/open-issue/ not found!"
     exit 1
 fi
 
@@ -127,13 +122,8 @@ if grep -q "src/hello.cpp" "$TMP_DIR_LIB/CMakeLists.txt"; then
 fi
 
 # Verify Claude Code configuration exists
-if [ ! -L "$TMP_DIR_LIB/.claude" ]; then
-    echo "Error: .claude symlink not found!"
-    exit 1
-fi
-
-if [ ! -d "$TMP_DIR_LIB/claude" ]; then
-    echo "Error: claude/ directory not found!"
+if [ ! -d "$TMP_DIR_LIB/.claude" ]; then
+    echo "Error: .claude/ directory not found!"
     exit 1
 fi
 
@@ -147,8 +137,8 @@ if [ ! -f "$TMP_DIR_LIB/docs/git-msg-tags.md" ]; then
     exit 1
 fi
 
-if [ ! -f "$TMP_DIR_LIB/claude/settings.json" ]; then
-    echo "Error: claude/settings.json not found!"
+if [ ! -f "$TMP_DIR_LIB/.claude/settings.json" ]; then
+    echo "Error: .claude/settings.json not found!"
     exit 1
 fi
 

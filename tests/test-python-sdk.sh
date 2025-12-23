@@ -41,13 +41,8 @@ if [ -f "$TMP_DIR/bootstrap.sh" ]; then
 fi
 
 # Verify Claude Code configuration exists
-if [ ! -L "$TMP_DIR/.claude" ]; then
-    echo "Error: .claude symlink not found!"
-    exit 1
-fi
-
-if [ ! -d "$TMP_DIR/claude" ]; then
-    echo "Error: claude/ directory not found!"
+if [ ! -d "$TMP_DIR/.claude" ]; then
+    echo "Error: .claude/ directory not found!"
     exit 1
 fi
 
@@ -61,18 +56,18 @@ if [ ! -f "$TMP_DIR/docs/git-msg-tags.md" ]; then
     exit 1
 fi
 
-if [ ! -f "$TMP_DIR/claude/settings.json" ]; then
-    echo "Error: claude/settings.json not found!"
+if [ ! -f "$TMP_DIR/.claude/settings.json" ]; then
+    echo "Error: .claude/settings.json not found!"
     exit 1
 fi
 
-if [ ! -d "$TMP_DIR/claude/skills/git-commit" ]; then
-    echo "Error: claude/skills/git-commit/ not found!"
+if [ ! -d "$TMP_DIR/.claude/skills/git-commit" ]; then
+    echo "Error: .claude/skills/git-commit/ not found!"
     exit 1
 fi
 
-if [ ! -d "$TMP_DIR/claude/skills/open-issue" ]; then
-    echo "Error: claude/skills/open-issue/ not found!"
+if [ ! -d "$TMP_DIR/.claude/skills/open-issue" ]; then
+    echo "Error: .claude/skills/open-issue/ not found!"
     exit 1
 fi
 

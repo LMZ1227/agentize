@@ -1,0 +1,166 @@
+#!/bin/bash
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "======================================"
+echo "Testing Agentize Mode Validation"
+echo "======================================"
+echo ""
+
+# Test 1: init mode with non-existent directory
+echo ">>> Test 1: init mode with non-existent directory"
+TMP_DIR_1="$PROJECT_ROOT/.tmp/mode-test-1"
+rm -rf "$TMP_DIR_1"
+
+echo "Creating SDK in non-existent directory..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_1" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_1" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init"
+
+if [ ! -d "$TMP_DIR_1" ]; then
+    echo "Error: Directory was not created!"
+    exit 1
+fi
+
+if [ ! -d "$TMP_DIR_1/.claude" ]; then
+    echo "Error: SDK structure not created!"
+    exit 1
+fi
+
+echo "✓ Test 1 passed: init mode creates directory and SDK structure"
+echo ""
+
+# Test 2: init mode with empty existing directory
+echo ">>> Test 2: init mode with empty existing directory"
+TMP_DIR_2="$PROJECT_ROOT/.tmp/mode-test-2"
+rm -rf "$TMP_DIR_2"
+mkdir -p "$TMP_DIR_2"
+
+echo "Creating SDK in empty existing directory..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_2" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_2" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init"
+
+if [ ! -d "$TMP_DIR_2/.claude" ]; then
+    echo "Error: SDK structure not created!"
+    exit 1
+fi
+
+echo "✓ Test 2 passed: init mode works with empty existing directory"
+echo ""
+
+# Test 3: init mode with non-empty existing directory (should fail)
+echo ">>> Test 3: init mode with non-empty existing directory (should fail)"
+TMP_DIR_3="$PROJECT_ROOT/.tmp/mode-test-3"
+rm -rf "$TMP_DIR_3"
+mkdir -p "$TMP_DIR_3"
+touch "$TMP_DIR_3/existing-file.txt"
+
+echo "Attempting to create SDK in non-empty directory (should fail)..."
+if make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_3" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_3" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init" 2>&1 | grep -q "exists and is not empty"; then
+    echo "✓ Test 3 passed: init mode correctly rejects non-empty directory"
+else
+    echo "Error: init mode should have rejected non-empty directory!"
+    exit 1
+fi
+echo ""
+
+# Test 4: update mode with non-existent directory (should fail)
+echo ">>> Test 4: update mode with non-existent directory (should fail)"
+TMP_DIR_4="$PROJECT_ROOT/.tmp/mode-test-4"
+rm -rf "$TMP_DIR_4"
+
+echo "Attempting to update non-existent directory (should fail)..."
+if make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_4" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_4" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="update" 2>&1 | grep -q "does not exist"; then
+    echo "✓ Test 4 passed: update mode correctly rejects non-existent directory"
+else
+    echo "Error: update mode should have rejected non-existent directory!"
+    exit 1
+fi
+echo ""
+
+# Test 5: update mode with directory without SDK structure (should fail)
+echo ">>> Test 5: update mode with directory without SDK structure (should fail)"
+TMP_DIR_5="$PROJECT_ROOT/.tmp/mode-test-5"
+rm -rf "$TMP_DIR_5"
+mkdir -p "$TMP_DIR_5"
+touch "$TMP_DIR_5/some-file.txt"
+
+echo "Attempting to update directory without SDK structure (should fail)..."
+if make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_5" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_5" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="update" 2>&1 | grep -q "not a valid SDK structure"; then
+    echo "✓ Test 5 passed: update mode correctly rejects directory without SDK structure"
+else
+    echo "Error: update mode should have rejected directory without SDK structure!"
+    exit 1
+fi
+echo ""
+
+# Test 6: update mode with valid SDK structure (should succeed)
+echo ">>> Test 6: update mode with valid SDK structure (should succeed)"
+TMP_DIR_6="$PROJECT_ROOT/.tmp/mode-test-6"
+rm -rf "$TMP_DIR_6"
+
+echo "First creating a valid SDK..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_6" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_6" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init"
+
+# Modify a file in .claude/ to verify backup
+echo "# Modified by test" >> "$TMP_DIR_6/.claude/settings.json"
+
+echo "Now updating the SDK..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_6" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_6" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="update"
+
+# Verify backup was created
+if [ ! -d "$TMP_DIR_6/.claude.backup" ]; then
+    echo "Error: Backup directory not created during update!"
+    exit 1
+fi
+
+# Verify settings.json was updated (shouldn't contain test modification)
+if grep -q "Modified by test" "$TMP_DIR_6/.claude/settings.json"; then
+    echo "Error: settings.json was not updated!"
+    exit 1
+fi
+
+# Verify backup contains the modification
+if ! grep -q "Modified by test" "$TMP_DIR_6/.claude.backup/settings.json"; then
+    echo "Error: Backup doesn't contain previous version!"
+    exit 1
+fi
+
+echo "✓ Test 6 passed: update mode correctly updates valid SDK structure"
+echo ""
+
+echo "======================================"
+echo "All Agentize mode tests completed successfully!"
+echo "======================================"
+echo "Test artifacts remain at:"
+echo "  - $PROJECT_ROOT/.tmp/mode-test-*"
+echo ""
