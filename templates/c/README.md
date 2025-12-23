@@ -1,7 +1,8 @@
 # C SDK
 
 - `CMakeLists.txt`: This CMake configuration file is used to build the C SDK.
-- `hello.c`: A sample C source code for a function `hello` which prints "Hello, World!" to the screen, to be put in `AGENTIZE_SOURCE_PATH`.
+- `src/`: A folder containing source files for the C SDK (can be changed via `AGENTIZE_SOURCE_PATH`).
+  - `hello.c`: A sample C source code for a function `hello` which prints "Hello, World!" to the screen.
 - `include/`: A folder containing header files for the C SDK.
   - `hello.h`: The header file for the `hello` function.
 - `tests/`: A folder containing test cases for the C SDK.

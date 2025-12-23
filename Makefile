@@ -27,14 +27,23 @@ agentize:
 	@# Set default mode to init if not specified
 	@MODE=$(AGENTIZE_MODE); \
 	if [ -z "$$MODE" ]; then MODE="init"; fi; \
+	SOURCE_PATH=$(AGENTIZE_SOURCE_PATH); \
+	if [ -z "$$SOURCE_PATH" ]; then SOURCE_PATH="src"; fi; \
 	echo "Creating SDK for project: $(AGENTIZE_PROJECT_NAME)"; \
 	echo "Language: $(AGENTIZE_PROJECT_LANG)"; \
 	echo "Mode: $$MODE"; \
 	echo "Target path: $(AGENTIZE_PROJECT_PATH)"; \
+	echo "Source path: $$SOURCE_PATH"; \
 	if [ "$$MODE" = "init" ]; then \
 		echo "Initializing SDK structure..."; \
 		mkdir -p "$(AGENTIZE_PROJECT_PATH)"; \
 		cp -r templates/$(AGENTIZE_PROJECT_LANG)/* "$(AGENTIZE_PROJECT_PATH)/"; \
+		if [ "$$SOURCE_PATH" != "src" ]; then \
+			echo "Renaming src/ to $$SOURCE_PATH/..."; \
+			mv "$(AGENTIZE_PROJECT_PATH)/src" "$(AGENTIZE_PROJECT_PATH)/$$SOURCE_PATH"; \
+			sed -i.bak "s|src/|$$SOURCE_PATH/|g" "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt"; \
+			rm -f "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt.bak"; \
+		fi; \
 		echo "SDK initialized successfully at $(AGENTIZE_PROJECT_PATH)"; \
 	elif [ "$$MODE" = "update" ]; then \
 		echo "Updating SDK structure..."; \

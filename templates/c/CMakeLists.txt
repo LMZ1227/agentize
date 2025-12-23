@@ -9,7 +9,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 include_directories(include)
 
 # Create a library from the SDK sources
-add_library(sdk STATIC hello.c)
+add_library(sdk STATIC src/hello.c)
 
 # Enable testing
 enable_testing()
