@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Fetch",
+      "WebFetch",
+      "Write(.tmp/**)",
 
       "Bash(echo FILE OPERATIONS - Reading and viewing files)",
       "Read(//tmp/**)",
@@ -37,12 +38,15 @@
       "Skill(open-issue)",
       "Skill(fork-dev-branch)",
       "Skill(external-consensus)",
+      "Skill(commit-msg)",
       "Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)",
 
       "Bash(echo GIT READ OPERATIONS - Non-destructive git commands)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
 
       "Bash(echo GITHUB READ OPERATIONS - Viewing GitHub resources)",
       "Bash(gh search:*)",

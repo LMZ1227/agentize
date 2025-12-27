@@ -18,3 +18,6 @@ This document defines the tags to be used in git commit messages.
   - `.command`: Changes to slash commands.
   - `.settings`: Changes to agent settings or configurations.
   - `.workflow`: Changes to agent-based workflows or processes.
+- `review`: If this code change is driven by a code review comment.
+  - Use this tag in addition before any other tags.
+  - This typically cannot be a standalone tag.
