@@ -23,7 +23,7 @@ This directory contains utility scripts and git hooks for the project.
   - Examples of usage and output
 
 ### Git Worktree Helper
-- `wt-cli.sh` - Worktree management script for parallel agent development
+- `wt-cli.sh` - Worktree CLI and library (executable + sourceable)
   - Usage: `./scripts/wt-cli.sh <command> [args]`
   - Commands:
     - `create <issue-number> [description]` - Create worktree with GitHub title fetch
@@ -32,11 +32,10 @@ This directory contains utility scripts and git hooks for the project.
     - `prune` - Clean up stale worktree metadata
   - Features:
     - Automatically fetches issue titles from GitHub via `gh` CLI
-    - Creates branches following `issue-<N>-<title>` convention with explicit hyphen normalization
+    - Creates branches following `issue-<N>-<title>` convention
     - Limits suffix length to 10 characters (configurable via `WORKTREE_SUFFIX_MAX_LENGTH`)
     - Bootstraps `CLAUDE.md` into each worktree
     - Worktrees stored in `trees/` directory (gitignored)
-    - Can be sourced to define `wt()` shell function for cross-project usage
   - Exit codes: 0 (success), 1 (error)
   - Examples:
     ```bash
@@ -52,6 +51,8 @@ This directory contains utility scripts and git hooks for the project.
     # Remove worktree (force removes with uncommitted changes)
     ./scripts/wt-cli.sh remove 42
     ```
+
+- `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
 ### Makefile Utilities
 
@@ -106,15 +107,10 @@ This directory contains utility scripts and git hooks for the project.
 
 ### Installing Pre-commit Hook
 
-The pre-commit hook is installed automatically when using the worktree tools:
-
-- **`wt init`** configures `core.hooksPath` to `scripts`, enabling shared hooks across all worktrees.
-- **`wt spawn`** (via `worktree.sh`) installs a fallback hook in new worktrees when `core.hooksPath` is not configured.
-
-For manual setup or troubleshooting, you can link the hook directly:
+The pre-commit hook should be linked to `.git/hooks/pre-commit`:
 
 ```bash
-# Manual linking (optional, typically not needed)
+# Link to git hooks (typically done during project setup)
 ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 ```
 

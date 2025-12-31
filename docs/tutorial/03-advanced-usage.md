@@ -54,21 +54,21 @@ Assign one issue per worker clone:
 **Terminal 1 (Worker 1 - Issue #45):**
 ```bash
 cd ~/projects/my-project-worker-1
-claude
+claude-code
 # /issue-to-impl 45
 ```
 
 **Terminal 2 (Worker 2 - Issue #46):**
 ```bash
 cd ~/projects/my-project-worker-2
-claude
+claude-code
 # /issue-to-impl 46
 ```
 
 **Terminal 3 (Worker 3 - Issue #47):**
 ```bash
 cd ~/projects/my-project-worker-3
-claude
+claude-code
 # /issue-to-impl 47
 ```
 
@@ -91,7 +91,7 @@ Worktrees share the `.git` directory while providing isolated working directorie
 
 ### Setup
 
-Use the helper script:
+Use the `wt-cli.sh` script:
 
 ```bash
 # Create worktree (fetches title from GitHub)
@@ -116,7 +116,7 @@ The script automatically:
 cd ~/projects/my-project
 scripts/wt-cli.sh create 45
 cd trees/issue-45-add-rust-support
-claude
+claude-code
 # /issue-to-impl 45
 ```
 
@@ -125,7 +125,7 @@ claude
 cd ~/projects/my-project
 scripts/wt-cli.sh create 46
 cd trees/issue-46-update-documentation
-claude
+claude-code
 # /issue-to-impl 46
 ```
 
@@ -171,12 +171,12 @@ If a worker creates a milestone, resume in the same location:
 ```bash
 # For clones
 cd ~/projects/my-project-worker-1
-claude
+claude-code
 # /miles2miles
 
 # For worktrees
 cd ~/projects/my-project/trees/issue-45-*
-claude
+claude-code
 # /miles2miles
 ```
 

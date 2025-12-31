@@ -14,25 +14,12 @@ source setup.sh
 
 3. Initialize a new project:
 ```bash
-lol init --name your_project_name --lang c --path /path/to/your/project # For your new project
-lol update --path /path/to/your/existing/project # For your existing project updating the rules
+lol init --name your_project_name --lang c --path /path/to/your/project
 ```
+
 This creates an initial SDK structure in the specified project path. Use `lol --help` to see all available options.
 
-**Available options:**
-- `--name <name>` - Project name (required for init)
-- `--lang <lang>` - Programming language: c, cxx, python (required for init)
-- `--path <path>` - Project path (optional, defaults to current directory)
-- `--source <path>` - Source code path relative to project root (optional for C/C++ projects)
-
-Use `lol --help` for complete documentation.
-
-
-> In case you are curious about why we name the CLI `lol`, it is from a famous saying from Alan
-> Perlis: _When someone says, "I want a programming language in which I need only say what I want done,"
-> give him a `lol`lipop._
-
-## Core Philosophy
+## Core Phylosophy
 
 1. Plan first, code later: Use AI to generate a detailed plan before writing any code.
    - Plan is put on Github Issues for tracking.
@@ -66,44 +53,60 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 4. **[Issue to Implementation](./docs/tutorial/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
 5. **[Advanced Usage](./docs/tutorial/03-advanced-usage.md)** - Scale up with parallel development workflows
 
-## Per-Project Worktrees
+## Cross-Project Shell Functions
 
-Agentize also provides ergonomic shell functions for you to manage git worktrees so that you
-can develop multiple features in parallel (refer to [Advanced Usage](./docs/tutorial/03-advanced-usage.md)
-tutorial which already mentioned above for more details).
+Agentize provides shell functions that work from any directory:
+- `wt` - Manage worktrees (spawn, list, remove, prune)
+- `lol` - Initialize and update SDK projects (init, update)
+
+For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
+
+**Direct execution:** `scripts/wt-cli.sh` can be executed directly or sourced for function access.
 
 ### Worktree Management (`wt`)
 
-Manage git worktrees on a per-project basis using the bare repository pattern:
+Manage git worktrees from any directory:
 
 ```bash
-wt init                  # Initialize trees/ directory with trees/main/ worktree
-wt main                  # Navigate to trees/main/ worktree
-wt spawn 42              # Create worktree for issue #42 and auto-launch claude
-wt spawn 42 --no-agent   # Create worktree without launching claude (for scripting)
+wt spawn 42              # Create worktree for issue #42
 wt list                  # List all worktrees
-wt remove 42             # Remove worktree for issue #42 (also deletes branch)
-wt remove 42 --keep-branch  # Remove worktree but keep the branch
+wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
 ```
 
-`wt spawn` automatically launches claude in the new worktree when running interactively. Use `--no-agent` to disable auto-launch for scripting or testing.
+Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
 
-**Bare Repository Pattern:**
+### SDK Project Management (`lol`)
 
-After running `wt init`, your repository structure becomes:
+Ergonomic commands for initializing and updating SDK projects:
 
-```
-repo-root/           # Coordination point (detached HEAD)
-├── .git/
-├── trees/
-│   ├── main/        # Main branch worktree (created by wt init)
-│   ├── issue-42-*/  # Feature branch worktrees (created by wt spawn)
-│   └── issue-43-*/
+**Initialize a new project:**
+
+```bash
+lol init --name my-project --lang python --path /path/to/project
 ```
 
-The main repository becomes a coordination point while all development work happens
-in worktrees under `trees/`. Use `wt main` to quickly navigate to the main branch worktree.
+**Update an existing project:**
+
+From project root or any subdirectory:
+```bash
+lol update
+```
+
+Or specify explicit path:
+```bash
+lol update --path /path/to/project
+```
+
+The `update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
+
+**Available options:**
+- `--name <name>` - Project name (required for init)
+- `--lang <lang>` - Programming language: c, cxx, python (required for init)
+- `--path <path>` - Project path (optional, defaults to current directory)
+- `--source <path>` - Source code path relative to project root (optional)
+
+Use `lol --help` for complete documentation.
 
 ## Project Organization
 
@@ -113,8 +116,9 @@ agentize/
 │   ├── draft/              # Draft documents for local development
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── scripts/                # Shell scripts and functions
-│   ├── wt-cli.sh           # Worktree management (used by wt shell function)
-│   └── lol-cli.sh          # CLI wrapper functions
+│   ├── wt-cli.sh           # Worktree CLI and library (executable + sourceable)
+│   ├── lol-cli.sh          # CLI wrapper functions
+│   └── worktree.sh         # Core worktree management
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases
