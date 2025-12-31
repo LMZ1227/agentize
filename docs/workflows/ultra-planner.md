@@ -19,10 +19,10 @@ graph TD
     E[Combined 3-perspective report] --> F
     F[External consensus: Synthesize plan] --> G
     G[Auto-create draft issue] --> H{User reviews draft}
-    H -->|Refine| I[/refine-issue command]
+    H -->|Refine| I["/refine-issue command"]
     I --> B
-    H -->|Approve| J[Remove draft prefix on GitHub]
-    J --> K[/issue-to-impl for implementation]
+    H -->|Approve| J["Remove draft prefix on GitHub"]
+    J --> K["/issue-to-impl for implementation"]
     H -->|Abandon| Z(Close issue)
 
     style A fill:#ffcccc
