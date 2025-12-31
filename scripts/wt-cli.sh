@@ -150,6 +150,11 @@ cmd_create() {
     # Create worktree from main branch using git -C to operate on main repo
     git -C $main_repo_dir worktree add -b "$branch_name" "$worktree_path" "$main_branch"
 
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: Failed to create worktree${NC}"
+        return 1
+    fi
+
     echo -e "${GREEN}✓ Worktree created successfully${NC}"
     echo ""
 
