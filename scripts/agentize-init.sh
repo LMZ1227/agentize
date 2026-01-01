@@ -99,12 +99,12 @@ if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
     echo "Preserving existing .agentize.yaml..."
 else
     echo "Creating .agentize.yaml with project metadata..."
-    cat > "$AGENTIZE_PROJECT_PATH/.agentize.yaml" <<EOF
-project:
-  name: $AGENTIZE_PROJECT_NAME
-  lang: $AGENTIZE_PROJECT_LANG
-  source: $SOURCE_PATH
-EOF
+    {
+        echo "project:"
+        echo "  name: $AGENTIZE_PROJECT_NAME"
+        echo "  lang: $AGENTIZE_PROJECT_LANG"
+        echo "  source: $SOURCE_PATH"
+    } > "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
 fi
 
 # Optionally detect git default branch (only if .agentize.yaml was just created)
