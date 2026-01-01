@@ -1,0 +1,6 @@
+project:
+  name: agentize
+  lang: none
+
+pre_commit:
+  enabled: true
