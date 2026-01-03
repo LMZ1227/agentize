@@ -5,7 +5,9 @@ description: Drive implementation forward incrementally with automatic progress 
 
 # Milestone Skill
 
-This skill instructs AI agents on how to drive implementation forward incrementally, tracking LOC count, running tests, and creating milestone checkpoints when the 800 LOC threshold is reached without completion.
+This skill is a core component for implementing large features incrementally, which aims
+at providing a transparent context compacting by tracking LOC count, running tests, and creating
+milestone checkpoints when the 800 LOC threshold is reached without completion.
 
 ## Skill Purpose
 
@@ -22,10 +24,19 @@ This skill is the core implementation driver used by `/issue-to-impl` and `/mile
 ## Philosophy
 
 - **Incremental progress over big bang**: Small, testable chunks beat large rewrites
-- **Test-driven validation**: Run tests frequently to catch issues early
+  - Provide unobvious technical insights and design decisions you made during this chunk of implementation
 - **Transparent checkpoints**: Milestone documents provide clear progress visibility
-- **Fail-fast on errors**: Stop and create milestone when blocked rather than pushing forward blindly
 - **LOC-based pacing**: Use lines of code (not time) to determine when to checkpoint
+- **Partially complete work:** You are allowed to have some test failures at milestones, which particularly means you **are REQUIRED** to run a thorough test suite after each chunk of implementation, and before creating a milestone.
+  - The milestone document will record the status of all the tests, including passed and failed tests.
+    - **Example**
+      - **Before:** 5/8 tests Passed
+      - **After:** 6/8 tests Passed
+      - **Next Steps:** Fix remaining 2 tests in next milestone
+  - You should dynamically adjust our plan with the whole plan and the current status of milestone.
+    - Did you incrementally finish some tests that were failing in the previous milestone?
+    - Did you find some new edge cases that require new tests to be written?
+    - Did you unexpectedly break some test cases that were passing before? Is it related or unrelated to the current implementation plan?
 
 ---
 
@@ -48,9 +59,12 @@ The milestone skill takes the following inputs (extracted from context):
    - When starting fresh (first milestone), start from 0
 
 4. **Current test status** (determined by running tests)
-   - Total test count
-   - Passed test count
-   - Failed test count (with failure details)
+   - You do not need to pass all the tests before creating a milestone, but you **MUST** run the tests after each implementation chunk to determine current status.
+   - You should provide a summary of the test results in the milestone document, including:
+     - Test passed as expected by this chunk of implementation
+     - Test failed as expected by this chunk of implementation
+     - Test unexpectedly broken by this chunk of implementation
+     - What is planned to be worked on in the immediately next milestone
 
 ---
 
@@ -143,6 +157,7 @@ From the plan or milestone:
 - Identify the next incomplete implementation step
 - Determine which files need changes
 - Understand what to implement in the next chunk
+- Provide unobvious technical insights and design decisions you made for this chunk of implementation
 
 **Chunk size guideline**: Aim for 100-200 LOC per chunk
 - If a step is > 200 LOC, break it into substeps
