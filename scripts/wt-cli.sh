@@ -551,11 +551,12 @@ cmd_create() {
 
         # Build Claude command with optional --dangerously-skip-permissions flag
         local claude_cmd="claude"
+        local yolo_mode=""
         if [ "$yolo_mode" = true ]; then
-            claude_cmd="claude --dangerously-skip-permissions"
+            yolo_mode="--dangerously-skip-permissions"
         fi
 
-        $claude_cmd "/issue-to-impl ${issue_number}"
+        ${claude_cmd} ${yolo_mode} "/issue-to-impl ${issue_number}"
     fi
 }
 
