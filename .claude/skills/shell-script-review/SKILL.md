@@ -1,5 +1,6 @@
 ---
 description: Skill for reviewing shell scripts with shell-neutral behavior with best efforts.
+name: shell-script-review
 ---
 
 Currently, all the mainstream operating systems are using Bash as their default shell.
