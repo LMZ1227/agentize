@@ -18,9 +18,8 @@ This command fetches an existing GitHub plan issue, runs its content through the
 
 1. **Fetch issue**: Get issue title and body via GitHub CLI
 2. **Invoke three-agent debate**: Bold-proposer, then critique and reducer in parallel
-3. **Combine reports**: Merge all three perspectives into single document
-4. **External consensus**: Synthesize balanced refinement from debate
-5. **Update issue**: Replace issue body with refined consensus plan
+3. **External consensus**: Script combines reports and synthesizes balanced refinement
+4. **Update issue**: Replace issue body with refined consensus plan
 
 ## Inputs
 
@@ -45,9 +44,12 @@ This command fetches an existing GitHub plan issue, runs its content through the
 ## Outputs
 
 **Files created:**
-- `.tmp/issue-{N}-original.md` - Original issue body
-- `.tmp/issue-{N}-debate.md` - Combined three-agent report
-- `.tmp/issue-{N}-consensus.md` - Refined consensus plan
+- `.tmp/issue-{N}-original-{timestamp}.md` - Original issue body
+- `.tmp/bold-proposal-{timestamp}.md` - Bold proposer agent report
+- `.tmp/critique-output-{timestamp}.md` - Critique agent report
+- `.tmp/reducer-output-{timestamp}.md` - Reducer agent report
+- `.tmp/issue-{N}-debate.md` or `.tmp/debate-report-{timestamp}.md` - Combined three-agent report (created by external-consensus script)
+- `.tmp/issue-{N}-consensus.md` or `.tmp/consensus-plan-{timestamp}.md` - Refined consensus plan (created by external-consensus script)
 
 **GitHub issue:**
 - Updated via `gh issue edit {N} --body-file` with refined plan
@@ -209,30 +211,34 @@ Identify unnecessary complexity and propose simpler alternatives."
 
 ### Step 5: Invoke External Consensus Skill
 
-**REQUIRED SKILL CALL:**
+**REQUIRED BASH COMMAND:**
 
-Use the Skill tool to invoke the external-consensus skill with the 3 report file paths:
+Invoke the external-consensus script directly with the 3 report file paths:
 
+```bash
+CONSENSUS_PLAN_FILE=$(.claude/skills/external-consensus/scripts/external-consensus.sh \
+    "$BOLD_FILE" \
+    "$CRITIQUE_FILE" \
+    "$REDUCER_FILE")
 ```
-Skill tool parameters:
-  skill: "external-consensus"
-  args: "{BOLD_FILE} {CRITIQUE_FILE} {REDUCER_FILE}"
-```
 
-**Note:** The external-consensus skill will:
-1. Combine the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
-2. Process the combined report through external AI review (Codex or Claude Opus)
-
-**What this skill does:**
-1. Combines the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
-2. Prepares external review prompt using `.claude/skills/external-consensus/external-review-prompt.md`
-3. Invokes Codex CLI (preferred) or Claude API (fallback) for consensus synthesis
+**What this script does:**
+1. Combines the 3 agent reports into a single debate report
+   - If BOLD_FILE follows pattern `issue-{N}-*`, saves as `.tmp/issue-{N}-debate.md`
+   - Otherwise uses timestamp: `.tmp/debate-report-{timestamp}.md`
+2. Prepares external review prompt using template with debate content
+3. Invokes Codex CLI (preferred) or Claude Opus fallback for consensus synthesis
+   - Codex: `gpt-5.2-codex` with xhigh reasoning effort, web search, read-only sandbox
+   - Claude: Opus with read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
 4. Parses and validates the consensus plan structure
-5. Saves consensus plan to `.tmp/issue-{N}-consensus.md`
-6. Returns summary and file path
+5. Saves consensus plan:
+   - If issue number extracted: `.tmp/issue-{N}-consensus.md`
+   - Otherwise: `.tmp/consensus-plan-{timestamp}.md`
+6. Outputs consensus plan file path on stdout (captured in `CONSENSUS_PLAN_FILE`)
+7. Displays summary on stderr
 
-**Extract:**
-- Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
+**Script output captured:**
+- `CONSENSUS_PLAN_FILE`: Full path to the generated consensus plan (e.g., `.tmp/issue-245-consensus.md`)
 
 ### Step 6: Update GitHub Issue
 
