@@ -7,198 +7,69 @@ Enable automated workflows without manual permission prompts by setting `CLAUDE_
 ```bash
 # Enable hands-off mode
 export CLAUDE_HANDSOFF=true
+export HANDSOFF_MAX_CONTINUATIONS=10  # Optional: set auto-continue limit
 
 # Run full implementation workflow without prompts
 /issue-to-impl 42
 ```
 
-## What Gets Auto-Approved
+## What Gets Handsoff?
 
-When `CLAUDE_HANDSOFF=true`, the following operations proceed without permission prompts:
 
-### File Operations
-- **Read**: All file read operations
-- **Write**: Create new files
-- **Edit**: Modify existing files
-- **Glob**: File pattern matching
-- **Grep**: Content search
+### Permission Requests
 
-### Safe Git Commands
-- **Status/Info**: `git status`, `git diff`, `git log`, `git show`, `git rev-parse`
-- **Local branching**: `git checkout`, `git switch`, `git branch`
-- **Staging**: `git add`
-- **Committing**: `git commit` (local only, no push)
-- **Sync operations**: `git fetch`, `git rebase` (for branch sync)
+It uses `.claude/hooks/permission-request.sh` to aut-approve safe operations.
+It is a more powerful solution to `settings.json` as it only supports rigid regex patterns.
 
-### Test/Build Commands
-- **Test runners**: `make test`, `make check`, `npm test`, `pytest`, test scripts in `tests/`
-- **Build commands**: `make build`, `make all`, `ninja`, `cmake`
-- **Linters**: `make lint`
 
-### GitHub Read Operations
-- **View commands**: `gh issue view`, `gh pr view`, `gh pr list`, `gh issue list`
-- **Search**: `gh search`
-- **Run info**: `gh run view`, `gh run list`
+### Auto-continuations
 
-## What Still Requires Approval
+It will automatically continue operations that require multiple stops by hooking `UserPromptSubmit`, `Stop`, and `PostToolUse` events.
+As we only have two main workflows `/ultra-planner` and `/issue-to-impl`, and its intermediate steps are well defined, so it is trivial to auto-continue them.
 
-Hands-off mode **does NOT** auto-approve:
+`UserPromptSubmit`: When user submits a prompt, the hook checks if the prompt `seesion_id` matches a file `.tmp/claude-hooks/handsoff/<session_id>.json`,
+which stores the metadata about how many continuations have been done so far and the max allowed continuations.
+On `CLAUDE_HANDSOFF=true`, if not exists, it creates this file with:
 
-### Destructive Operations
-- `rm -rf`, `git clean`
-- `git reset --hard`
-- `git push --force`
-
-### Publish Operations
-- `git push` (publishing to remote)
-- `gh pr create` (creating pull requests)
-- `gh issue create` (creating issues)
-
-### Administrative Commands
-- Package installation (`npm install`, `pip install`)
-- Permission changes (`chmod`, `chown`)
-- System configuration
-
-## Workflow Examples
-
-### Full Implementation Workflow
-
-```bash
-# Enable hands-off mode
-export CLAUDE_HANDSOFF=true
-
-# Start implementation from issue
-/issue-to-impl 42
-
-# This auto-approves:
-# - Creating branch (git checkout -b)
-# - Writing docs (Write tool)
-# - Creating tests (Write tool)
-# - Implementing code (Edit/Write tools)
-# - Running tests (make test)
-# - Creating milestone commits (git add/commit)
-
-# Resume from milestone
-User: Continue from the latest milestone
-
-# Review changes (still auto-approved for reads)
-/code-review
-
-# This STILL REQUIRES APPROVAL:
-/open-pr  # Publishing PR requires manual confirmation
+```json
+{
+  "workflow": "<workflow_name>",
+  "max_continuations": <from HANDSOFF_MAX_CONTINUATIONS or default 10>,
+  "continuations_done": 0,
+  "state": "in_progress"
+}
 ```
 
-### Planning Workflow
+If exists, it does nothing.
 
-```bash
-export CLAUDE_HANDSOFF=true
+`Stop`: On `Stop` event, it means the current session is asking for a further prompt to continue.
+It checks if the `.tmp/claude-hooks/handsoff/<session_id>.json` exists, and if so, reads it.
+If `continuations_done < max_continuations`, it increments `continuations_done` by 1, saves the file, and auto-continues the session by invoking
+a Haiku API call to continue the session with a simple prompt.
 
-# Auto-approves exploration and planning
-/ultra-planner "implement user authentication"
-
-# Auto-approves reading issue, creating plan
-/refine-issue 42
+```
+claude -m haiku -p < EOF
+{
+   [some template to explain the strategy of continuing a workflow]
+   [append five last messages in this session to provide context]
+}
+EOF > /tmp/claude-hooks/handsoff/continue-response-<session_id>.json
 ```
 
-## Safety Boundaries
+`post-stop.py` is written in Python because it is easier to deal with JSON manipulation and iteration in Python than bash.
 
-Hands-off mode is designed for **local development workflows** on feature branches. Safety is maintained through:
+`PostToolUse`: On `PostToolUse` event, it checks `.tmp/claude-hooks/handsoff/<session_id>.json` again.
+If it is a `/ultra-planner` upon first placeholder issue open, it changes `state` to `awaiting_issue_details` and saves the file.
+If it is a `/ultra-planner` in `awaiting_issue_details` state upon second time of editing the issue with details, it changes `state` to `done`.
+When it is `done`, `Stop` hook will no longer auto-continue.
 
-1. **Fail-closed default**: Unknown tools/commands default to asking for permission
-2. **Branch restrictions**: Most workflows operate on feature branches (e.g., `issue-42-*`)
-3. **No publish auto-approval**: Remote operations (push, PR creation) always require confirmation
-4. **Explicit denylists**: Destructive commands are explicitly blocked from auto-approval
+If it is a `/issue-to-impl`, upon first time of publishing the PR, it changes `state` to `done`.
+When it is `done`, `Stop` hook will no longer auto-continue.
 
-## Auto-Continue for Workflows
-
-When hands-off mode is enabled, long-running workflows like `/ultra-planner` and `/issue-to-impl` can automatically continue after reaching Stop events (when the agent completes a milestone or task checkpoint).
-
-### Auto-Continue Limit
-
-By default, workflows auto-continue up to **10 times** per session before requiring manual input. This prevents infinite loops while allowing multi-milestone implementations to proceed hands-free.
-
-**Configure the limit:**
-```bash
-export HANDSOFF_MAX_CONTINUATIONS=10  # Default
-export HANDSOFF_MAX_CONTINUATIONS=5   # Fewer continuations
-export HANDSOFF_MAX_CONTINUATIONS=20  # More continuations
-```
-
-**How it works:**
-1. When a workflow reaches a Stop event (e.g., "Milestone 2 created, resume to continue")
-2. The system checks the continuation counter
-3. If under the limit, automatically continues with "Continue from the latest milestone"
-4. If at/over the limit, waits for manual input
-5. Counter resets at the start of each new session
-
-**Manual resume after limit:**
-```bash
-# Once auto-continue limit is reached, resume manually:
-User: Continue from the latest milestone
-User: Resume implementation
-```
-
-### Supported Environment Variables
-
-- `CLAUDE_HANDSOFF`: Enable/disable hands-off mode (`true`/`false`)
-- `HANDSOFF_MAX_CONTINUATIONS`: Auto-continue limit (integer, default: 10)
-
-Invalid or non-positive values for `HANDSOFF_MAX_CONTINUATIONS` disable auto-continue (fail-closed).
-
-## Disabling Hands-Off Mode
-
-```bash
-# Disable hands-off mode (back to interactive)
-export CLAUDE_HANDSOFF=false
-
-# Or unset the variable
-unset CLAUDE_HANDSOFF
-```
-
-When disabled or unset, all operations require permission prompts (original behavior).
-
-## Troubleshooting
-
-### Stuck Workflow
-
-If a workflow gets stuck waiting for permission:
-
-1. Check `CLAUDE_HANDSOFF` value:
-   ```bash
-   echo $CLAUDE_HANDSOFF
-   ```
-
-2. Verify the operation is in the auto-approve list above
-
-3. Check hook logs (if logging is enabled):
-   ```bash
-   cat .tmp/claude-hooks/auto-approvals.log
-   ```
-
-### Force Manual Mode
-
-To force manual approval for a specific command while hands-off mode is enabled:
-
-```bash
-CLAUDE_HANDSOFF=false /issue-to-impl 42
-```
-
-## Implementation Details
-
-The permission hook (`.claude/hooks/permission-request.sh`) inspects:
-- `CLAUDE_HANDSOFF` environment variable
-- Tool name being invoked
-- Tool parameters (for Bash commands)
-
-Based on these inputs, it returns:
-- `allow` for safe, local operations when `CLAUDE_HANDSOFF=true`
-- `ask` for destructive/publish operations or when hands-off mode is disabled
-- `deny` for explicitly blocked operations
-
-See `.claude/hooks/permission-request.sh` for implementation details.
 
 ## Related Documentation
 
+- [Claude Code Pre/Post Hooks](https://code.claude.com/docs/en/hooks)
 - [Issue to Implementation Workflow](workflows/issue-to-implementation.md)
 - [Issue-to-Impl Tutorial](tutorial/02-issue-to-impl.md)
 - [Ultra Planner Workflow](workflows/ultra-planner.md)
