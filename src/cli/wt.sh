@@ -305,7 +305,9 @@ cmd_spawn() {
         fi
 
         echo "Invoking Claude Code..."
-        cd "$worktree_path" && claude $claude_flags
+        cd "$worktree_path" && claude $claude_flags "/issue-to-impl $issue_no" || {
+            echo "Warning: Failed to invoke Claude Code" >&2
+        }
     fi
 
     return 0
