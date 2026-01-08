@@ -41,6 +41,8 @@ PERMISSION_RULES = {
         ('Bash', r'^date'),
         ('Bash', r'^echo'),
         ('Bash', r'^cat'),
+        ('Bash', r'^head'),
+        ('Bash', r'^tail'),
         ('Bash', r'^find'),
         ('Bash', r'^ls'),
         ('Bash', r'^wc'),
@@ -120,10 +122,11 @@ def strip_env_vars(command):
     return env_pattern.sub('', command)
 
 def ask_haiku_first(tool, target):
-    if os.getenv('HANDSOFF_HAIKU_FIRST', '0').lower() not in ['1', 'true', 'on', 'enable']:
-        return 'ask'
-
     global hook_input
+
+    if os.getenv('HANDSOFF_AUTO_PERMISSION', '0').lower() not in ['1', 'true', 'on', 'enable']:
+        log_tool_decision(hook_input.get('session_id', 'unknown'), '', tool, target, 'SKIP_HAIKU')
+        return 'ask'
 
     transcript_path = hook_input.get("transcript_path", "")
 
@@ -131,7 +134,8 @@ def ask_haiku_first(tool, target):
     try:
         with open(transcript_path, 'r') as f:
             transcript = f.readlines()[-1]
-    except Exception:
+    except Exception as e:
+        log_tool_decision(hook_input.get('session_id', 'unknown'), '', tool, target, f'ERROR transcript: {str(e)}')
         return 'ask'
 
     prompt = f'''You are a judger for the below Claude Code tool usage.
@@ -151,20 +155,33 @@ Target: {target}
 '''
 
     try:
-        result = subprocess.run(
-            ['claude', 'chat', '--model', 'haiku', prompt.strip()],
-            capture_output=True,
+        result = subprocess.check_output(
+            ['claude', '--model', 'haiku', '-p'],
+            input=prompt,
             text=True,
             timeout=30
         )
-        decision = result.stdout.strip().lower()
-        log_tool_decision(hook_input['session_id'], transcript, tool, target, decision)
+        full_response = result.strip()
+        # Extract only the first word from the response
+        decision = full_response.split()[0].lower() if full_response else ''
+
+        # Log the full Haiku response for debugging
+        log_tool_decision(hook_input['session_id'], transcript, tool, target, f'HAIKU: {full_response}')
 
         if decision in ['allow', 'deny', 'ask']:
             return decision
         else:
+            # Log invalid output error
+            log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR invalid_output: {decision}')
             return 'ask'
-    except Exception:
+    except subprocess.TimeoutExpired as e:
+        log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR timeout: {str(e)}')
+        return 'ask'
+    except subprocess.CalledProcessError as e:
+        log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR process: returncode={e.returncode} stderr={e.stderr}')
+        return 'ask'
+    except Exception as e:
+        log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR subprocess: {str(e)}')
         return 'ask'
 
 def check_permission(tool, target):
@@ -193,10 +210,14 @@ def check_permission(tool, target):
         # No match, ask Haiku
         haiku_decision = ask_haiku_first(tool, target)
         return (haiku_decision, 'haiku')
-    except Exception:
-        # Any error, ask Haiku
-        haiku_decision = ask_haiku_first(tool, target)
-        return (haiku_decision, 'haiku')
+    except Exception as e:
+        # Any error, ask Haiku as fallback
+        try:
+            haiku_decision = ask_haiku_first(tool, target)
+            return (haiku_decision, 'haiku')
+        except Exception:
+            # If even Haiku fails, default to 'ask'
+            return ('ask', 'error')
 
 hook_input = json.load(sys.stdin)
 
