@@ -218,7 +218,8 @@ Create new worktree for issue from default branch.
 3. Validate issue exists via `gh issue view`
 4. Determine branch name (issue-N or issue-N-title from gh)
 5. Create worktree from default branch
-6. Invoke Claude (unless --no-agent)
+6. Add pre-trusted entry to `~/.claude.json` (requires `jq`)
+7. Invoke Claude (unless --no-agent)
 
 **Return codes:**
 - `0`: Worktree created successfully
@@ -391,6 +392,9 @@ All commands follow consistent error handling:
 ### Environment Integration
 
 **Required environment:** None (works standalone)
+
+**Optional dependencies:**
+- `jq`: Used by spawn to pre-trust worktree in `~/.claude.json`
 
 **Optional environment:**
 - `WT_DEFAULT_BRANCH`: Override branch detection

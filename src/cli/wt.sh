@@ -297,6 +297,19 @@ cmd_spawn() {
 
     echo "Created worktree: $worktree_path"
 
+    # Add pre-trusted entry to ~/.claude.json to skip trust dialog
+    local claude_config="$HOME/.claude.json"
+    if [ -f "$claude_config" ] && command -v jq >/dev/null 2>&1; then
+        # Check if projects key exists and add the new worktree path
+        local tmp_config
+        tmp_config=$(mktemp)
+        if jq --arg path "$worktree_path" '.projects[$path] = {"allowedTools": [], "hasTrustDialogAccepted": true}' "$claude_config" > "$tmp_config" 2>/dev/null; then
+            mv "$tmp_config" "$claude_config"
+        else
+            rm -f "$tmp_config"
+        fi
+    fi
+
     # Invoke Claude if not disabled
     if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
         local claude_flags=""
