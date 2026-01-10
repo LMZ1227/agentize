@@ -6,17 +6,17 @@ Scale up development by running multiple AI agents in parallel, each working on 
 
 ## Choose Your Workflow
 
-**Use clones when:**
-- Learning parallel development for the first time
+**Use multiple clones when:**
 - Working across different machines
-- Prefer complete isolation and simpler mental model
+- Prefer complete isolation between workers
+- Each worker needs independent fetch/push operations
 
-**Use worktrees when:**
+**Use single repo with worktrees when:**
 - Disk space is limited (worktrees share `.git`)
 - Working on same machine with multiple terminals
 - Want faster setup without re-cloning
 
-Both approaches work identically—pick based on your preference and constraints.
+Both approaches use the `wt` CLI—pick based on your isolation needs.
 
 ## When to Use Parallel Development
 
@@ -35,54 +35,59 @@ Both approaches work identically—pick based on your preference and constraints
 
 ### Setup
 
-Create separate clones for each parallel task:
+Use `wt clone` to create bare repositories with worktree environments:
 
 ```bash
-# Main development directory (already exists)
-cd ~/projects
+# Source wt.sh for shell integration
+source src/cli/wt.sh
 
-# Create parallel workers
-git clone https://github.com/your-org/my-project.git my-project-worker-1
-git clone https://github.com/your-org/my-project.git my-project-worker-2
-git clone https://github.com/your-org/my-project.git my-project-worker-3
+# Create parallel workers (each is a bare repo with trees/main)
+cd ~/projects
+wt clone https://github.com/your-org/my-project.git my-project-worker-1.git
+wt clone https://github.com/your-org/my-project.git my-project-worker-2.git
+wt clone https://github.com/your-org/my-project.git my-project-worker-3.git
 ```
+
+Each `wt clone` creates a bare repository and initializes `trees/main` automatically.
 
 ### Workflow
 
-Assign one issue per worker clone:
+Spawn issue worktrees in each clone. Use `--yolo` to skip permission prompts:
 
 **Terminal 1 (Worker 1 - Issue #45):**
 ```bash
-cd ~/projects/my-project-worker-1
-claude-code
-# /issue-to-impl 45
+cd ~/projects/my-project-worker-1.git
+wt spawn 45 --yolo
+# Claude starts automatically in trees/issue-45-*/
 ```
 
 **Terminal 2 (Worker 2 - Issue #46):**
 ```bash
-cd ~/projects/my-project-worker-2
-claude-code
-# /issue-to-impl 46
+cd ~/projects/my-project-worker-2.git
+wt spawn 46 --yolo
+# Claude starts automatically in trees/issue-46-*/
 ```
 
 **Terminal 3 (Worker 3 - Issue #47):**
 ```bash
-cd ~/projects/my-project-worker-3
-claude-code
-# /issue-to-impl 47
+cd ~/projects/my-project-worker-3.git
+wt spawn 47 --yolo
+# Claude starts automatically in trees/issue-47-*/
 ```
 
-Each AI works independently. Resume milestones in the same clone with natural language (e.g., "Continue from the latest milestone").
+Each AI works independently. Resume milestones with `wt goto <issue>` then start claude-code.
 
 ### Cleanup
 
 After merging PRs:
 
 ```bash
-# Delete worker clones
-rm -rf ~/projects/my-project-worker-*
+# Remove specific issue worktrees
+wt remove 45 --delete-branch
+wt remove 46 --delete-branch
 
-# Or keep them for the next batch
+# Or delete entire worker repos
+rm -rf ~/projects/my-project-worker-*.git
 ```
 
 ## Approach 2: Git Worktrees
@@ -91,45 +96,43 @@ Worktrees share the `.git` directory while providing isolated working directorie
 
 ### Setup
 
-Use the `wt-cli.sh` script:
+Initialize once, then spawn worktrees for each issue:
 
 ```bash
+# Source wt.sh for shell integration
+source src/cli/wt.sh
+
 # First-time setup: Initialize worktree environment
-scripts/wt-cli.sh init
+cd ~/projects/my-project.git
+wt init
 
-# Create worktree (fetches title from GitHub)
-scripts/wt-cli.sh spawn 42
-
-# Or specify custom description
-scripts/wt-cli.sh spawn 42 add-feature
-
-# Creates: trees/issue-42-add-feature/
-# Branch: issue-42-add-feature
+# Create worktree (fetches title from GitHub, starts Claude)
+wt spawn 42
+# Creates: trees/issue-42-<title>/
+# Branch: issue-42-<title>
 ```
 
-The script automatically:
+The `spawn` command automatically:
 - Creates `trees/issue-<N>-<title>/` (gitignored)
 - Creates branch following naming convention
-- Bootstraps `CLAUDE.md` and `.claude/` into worktree
+- Invokes Claude in the worktree
 
 ### Workflow
 
+Use `--yolo` to skip permission prompts, `--headless` for non-interactive mode:
+
 **Terminal 1 (Issue #45):**
 ```bash
-cd ~/projects/my-project
-scripts/wt-cli.sh spawn 45
-cd trees/issue-45-add-rust-support
-claude-code
-# /issue-to-impl 45
+cd ~/projects/my-project.git
+wt spawn 45 --yolo
+# Claude starts automatically in trees/issue-45-*/
 ```
 
 **Terminal 2 (Issue #46):**
 ```bash
-cd ~/projects/my-project
-scripts/wt-cli.sh spawn 46
-cd trees/issue-46-update-documentation
-claude-code
-# /issue-to-impl 46
+cd ~/projects/my-project.git
+wt spawn 46 --yolo
+# Claude starts automatically in trees/issue-46-*/
 ```
 
 Each worktree operates independently on its own branch.
@@ -145,14 +148,20 @@ The `CLAUDE.md` rule "DO NOT use `cd`" applies within each worktree individually
 ### Cleanup
 
 ```bash
-# Remove specific worktree
-scripts/wt-cli.sh remove 42
+# Remove specific worktree (keeps branch)
+wt remove 42
+
+# Remove worktree and delete branch
+wt remove 42 --delete-branch
 
 # List all worktrees
-scripts/wt-cli.sh list
+wt list
 
 # Clean up stale metadata
-scripts/wt-cli.sh prune
+wt prune
+
+# Remove all worktrees for closed issues
+wt purge
 ```
 
 ## Managing Progress
@@ -169,16 +178,13 @@ Worker 3 / trees/issue-47-*: Issue #47 - Performance fix
 
 ### Resume After Milestones
 
-If a worker creates a milestone, resume in the same location:
+If a worker creates a milestone, resume in the same worktree:
 
 ```bash
-# For clones
-cd ~/projects/my-project-worker-1
-claude-code
-# User: Continue from the latest milestone
+# Navigate to worktree
+wt goto 45
 
-# For worktrees
-cd ~/projects/my-project/trees/issue-45-*
+# Start Claude and resume
 claude-code
 # User: Continue from the latest milestone
 ```
