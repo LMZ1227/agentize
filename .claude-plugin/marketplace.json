@@ -1,7 +1,5 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agentize",
-  "description": "AI-powered development workflow with planning, implementation, and review commands",
   "owner": {
     "name": "SyntheSys-Lab",
     "email": "jian.weng@kaust.edu.sa"
@@ -9,17 +7,9 @@
   "plugins": [
     {
       "name": "agentize",
+      "source": "./",
       "description": "AI-powered development workflow with planning, implementation, and review commands",
-      "version": "1.0.0",
-      "author": {
-        "name": "SyntheSys-Lab"
-      },
-      "source": {
-        "source": "github",
-        "repo": "Synthesys-Lab/agentize"
-      },
-      "category": "development",
-      "homepage": "https://github.com/Synthesys-Lab/agentize"
+      "category": "development"
     }
   ]
 }
