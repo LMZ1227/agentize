@@ -9,7 +9,17 @@
       "name": "agentize",
       "source": "./",
       "description": "AI-powered development workflow with planning, implementation, and review commands",
-      "category": "development"
+      "version": "1.0.0",
+      "author": {
+        "name": "SyntheSys-Lab",
+        "email": "jian.weng@kaust.edu.sa"
+      },
+      "homepage": "https://github.com/Synthesys-Lab/agentize",
+      "repository": "https://github.com/Synthesys-Lab/agentize",
+      "license": "MIT",
+      "keywords": ["planning", "code-review", "implementation", "workflow"],
+      "category": "development",
+      "strict": false
     }
   ]
 }
